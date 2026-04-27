@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Interativo - Insights</title>
+    <!-- Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <!-- PapaParse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --border: #334155;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #8b5cf6;
+            --cyan: #06b6d4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        header {
+            margin-bottom: 2.5rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #60a5fa, #06b6d4, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .chart-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            position: relative;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            border-color: #475569;
+        }
+
+        .chart-card.wide {
+            grid-column: 1 / -1;
+        }
+
+        .chart-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 1.2rem;
+            background-color: var(--accent);
+            border-radius: 2px;
+        }
+
+        #loader {
+            text-align: center;
+            padding: 4rem;
+            font-size: 1.2rem;
+            color: var(--accent);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .kpi-card {
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        
+        .kpi-card:hover { border-color: rgba(255,255,255,0.2); }
+
+        .kpi-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03));
+            transform: skewX(-20deg);
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .kpi-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .kpi-card.blue .kpi-value { color: var(--accent); }
+        .kpi-card.green .kpi-value { color: var(--success); }
+        .kpi-card.red .kpi-value { color: var(--danger); }
+        .kpi-card.orange .kpi-value { color: var(--warning); }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Painel de documentação da IA</h1>
+        <p class="subtitle">Visão Estratégica Interativa dos Chamados</p>
+    </header>
+
+    <div id="loader">
+        <div class="spinner"></div>
+        <span>Carregando e processando inteligência de dados...</span>
+    </div>
+
+    <!-- KPIs Corrigidos com 'Não Validados' -->
+    <div class="kpi-container" id="kpis" style="display: none;">
+        <div class="kpi-card blue">
+            <div class="kpi-value" id="total-chamados">0</div>
+            <div class="kpi-label">Total de Chamados</div>
+        </div>
+        <div class="kpi-card green">
+            <div class="kpi-value" id="total-validados">0</div>
+            <div class="kpi-label">Documentos Validados</div>
+        </div>
+        <div class="kpi-card red" title="Documentos pendentes, não validados ou sem validação sinalizada.">
+            <div class="kpi-value" id="total-nao-validados">0</div>
+            <div class="kpi-label">Documentos Não Validados</div>
+        </div>
+        <div class="kpi-card orange">
+            <div class="kpi-value" id="total-versoes">0</div>
+            <div class="kpi-label">Versões Distintas</div>
+        </div>
+    </div>
+
+    <div class="dashboard-container" id="dashboard" style="display: none;">
+        
+        <!-- Timeline Chart (Melhorado para Stacked) -->
+        <div class="chart-card wide">
+            <h2 class="chart-title">Abertura de Chamados e Validação ao longo do Tempo</h2>
+            <div id="timelineChart" style="height: 350px;"></div>
+        </div>
+
+        <!-- Produtos Bar Chart (Melhorado com indicador de validação) -->
+        <div class="chart-card">
+            <h2 class="chart-title">Produtos Envolvidos e Status</h2>
+            <div id="produtoChart" style="height: 350px;"></div>
+        </div>
+
+        <!-- Status de Validação Pie Chart -->
+        <div class="chart-card">
+            <h2 class="chart-title">Status Global dos Documentos</h2>
+            <div id="validadoChart" style="height: 350px;"></div>
+        </div>
+
+        <!-- Versão Bar Chart Horizontal (Top 15 mais legível) -->
+        <div class="chart-card wide">
+            <h2 class="chart-title">Top 15 Versões Reportadas</h2>
+            <div id="versaoChart" style="height: 400px;"></div>
+        </div>
+
+        <!-- Origem por E-mail Horizontal Bar Chart -->
+        <div class="chart-card wide">
+            <h2 class="chart-title">Top Canais Solicitantes (E-mail)</h2>
+            <div id="emailChart" style="height: 400px;"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/1B9B_qYgUJiObiKTyknc3FJYJbrHX7hTsu1n2xEOFmII/export?format=csv";
+
+        Papa.parse(CSV_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                // remove potentially empty final rows
+                const data = results.data.filter(row => Object.keys(row).length > 2);
+                processData(data);
+                
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('kpis').style.opacity = '0';
+                document.getElementById('dashboard').style.opacity = '0';
+                
+                document.getElementById('kpis').style.display = 'grid';
+                document.getElementById('dashboard').style.display = 'grid';
+
+                // Fade-in animation effect
+                setTimeout(() => {
+                    document.getElementById('kpis').style.transition = 'opacity 0.6s ease';
+                    document.getElementById('dashboard').style.transition = 'opacity 0.6s ease';
+                    document.getElementById('kpis').style.opacity = '1';
+                    document.getElementById('dashboard').style.opacity = '1';
+                }, 50);
+            },
+            error: function(error) {
+                document.getElementById('loader').innerHTML = "<span style='color: var(--danger)'>Erro ao carregar dados: " + error.message + "</span>";
+            }
+        });
+
+        // Utils
+        function cleanString(str) {
+            return (str || "").trim() || "Não Informado";
+        }
+
+        // Helper to find column name dynamically to avoid typo/colon issues
+        function findColumnName(data, keyword) {
+            if (!data || data.length === 0) return null;
+            const keys = Object.keys(data[0]);
+            return keys.find(k => k.toLowerCase().includes(keyword.toLowerCase()));
+        }
+
+        function countBy(data, key) {
+            if (!key) return {};
+            const counts = {};
+            data.forEach(row => {
+                let val = cleanString(row[key]);
+                counts[val] = (counts[val] || 0) + 1;
+            });
+            return counts;
+        }
+
+        const layoutTemplate = {
+            plot_bgcolor: 'transparent',
+            paper_bgcolor: 'transparent',
+            font: { color: '#94a3b8', family: 'Inter' },
+            margin: { t: 20, l: 40, r: 20, b: 40 },
+            xaxis: { gridcolor: '#334155', zerolinecolor: '#334155', tickfont: { color: '#94a3b8' } },
+            yaxis: { gridcolor: '#334155', zerolinecolor: '#334155', tickfont: { color: '#94a3b8' } }
+        };
+
+        const config = { responsive: true, displayModeBar: false };
+
+        function processData(data) {
+            document.getElementById('total-chamados').innerText = data.length;
+            
+            // Lógica rigorosa de total de validados e não validados (correção pedida)
+            let validadosNum = 0;
+            let naoValidadosNum = 0;
+            const validadoCol = findColumnName(data, 'validado');
+
+            data.forEach(row => {
+                const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'não informado';
+                if (status === 'validado') {
+                    validadosNum++;
+                } else {
+                    naoValidadosNum++;
+                }
+            });
+
+            document.getElementById('total-validados').innerText = validadosNum;
+            document.getElementById('total-nao-validados').innerText = naoValidadosNum;
+
+            const versaoCol = findColumnName(data, 'versão') || findColumnName(data, 'versao');
+            const versoesMap = countBy(data, versaoCol);
+            // Remove null/empty mapping from unique version counts
+            const qtyVersoes = Object.keys(versoesMap).filter(v => v !== 'Não Informado').length;
+            document.getElementById('total-versoes').innerText = qtyVersoes;
+
+            const emailCol = findColumnName(data, 'e-mail') || findColumnName(data, 'email');
+
+            renderTimelineStacked(data, validadoCol);
+            renderProdutoStackChart(data, findColumnName(data, 'produto'), validadoCol);
+            renderValidadosChart(data, validadoCol);
+            renderEmailChart(countBy(data, emailCol));
+            renderVersaoHorizontalChart(versoesMap);
+        }
+
+        // Gráfico 1: Melhorado com áreas empilhadas distinguindo Validados de Não Validados
+        function renderTimelineStacked(data, validadoCol) {
+            const timelineMapValid = {};
+            const timelineMapInvalid = {};
+            const allDates = new Set();
+            const dateCol = findColumnName(data, 'data/hora') || findColumnName(data, 'data');
+            
+            data.forEach(row => {
+                const rawDate = dateCol ? cleanString(row[dateCol]) : 'Não Informado';
+                const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'nv';
+                
+                if(rawDate !== 'Não Informado') {
+                    const datePart = rawDate.split(' ')[0]; // Extrai dia/mes/ano
+                    allDates.add(datePart);
+                    
+                    if (status === 'validado') {
+                        timelineMapValid[datePart] = (timelineMapValid[datePart] || 0) + 1;
+                    } else {
+                        timelineMapInvalid[datePart] = (timelineMapInvalid[datePart] || 0) + 1;
+                    }
+                }
+            });
+
+            const parseDate = s => {
+                const parts = s.split('/');
+                return parts.length === 3 ? new Date(parts[2], parts[1]-1, parts[0]) : new Date(0);
+            };
+
+            const sortedDates = Array.from(allDates).sort((a,b) => parseDate(a) - parseDate(b));
+            
+            const traceValid = {
+                x: sortedDates,
+                y: sortedDates.map(date => timelineMapValid[date] || 0),
+                name: 'Validados',
+                type: 'bar',
+                marker: { color: '#10b981' }
+            };
+            
+            const traceInvalid = {
+                x: sortedDates,
+                y: sortedDates.map(date => timelineMapInvalid[date] || 0),
+                name: 'Não Validados',
+                type: 'bar',
+                marker: { color: '#ef4444' }
+            };
+
+            const layout = { 
+                ...layoutTemplate, 
+                barmode: 'stack',
+                xaxis: { ...layoutTemplate.xaxis, type: 'category' },
+                margin: { t: 10, l: 40, r: 20, b: 60 },
+                legend: { font: { color: '#f8fafc' }, orientation: 'h', y: 1.1, x: 0 }
+            };
+
+            Plotly.newPlot('timelineChart', [traceValid, traceInvalid], layout, config);
+        }
+
+        // Gráfico 2: Produtos exibidos empilhando Validados vs N/Validados
+        function renderProdutoStackChart(data, produtoCol, validadoCol) {
+            const mapValid = {};
+            const mapInvalid = {};
+            const produtos = new Set();
+            
+            data.forEach(row => {
+                let prod = produtoCol ? cleanString(row[produtoCol]) : 'Não Informado';
+                if (prod.length > 25) prod = prod.substring(0, 25) + "..."; // limite p/ n quebrar tela
+
+                const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'nv';
+                
+                produtos.add(prod);
+                if (status === 'validado') {
+                    mapValid[prod] = (mapValid[prod] || 0) + 1;
+                } else {
+                    mapInvalid[prod] = (mapInvalid[prod] || 0) + 1;
+                }
+            });
+
+            // Ordena produtos por volume total
+            const sortedProdutos = Array.from(produtos).sort((a,b) => {
+                const sumA = (mapValid[a]||0) + (mapInvalid[a]||0);
+                const sumB = (mapValid[b]||0) + (mapInvalid[b]||0);
+                return sumB - sumA;
+            });
+            
+            const traceV = {
+                x: sortedProdutos,
+                y: sortedProdutos.map(p => mapValid[p] || 0),
+                name: 'Validados',
+                type: 'bar',
+                marker: { color: '#10b981' }
+            };
+            
+            const traceNV = {
+                x: sortedProdutos,
+                y: sortedProdutos.map(p => mapInvalid[p] || 0),
+                name: 'Não Validados',
+                type: 'bar',
+                marker: { color: '#ef4444' }
+            };
+
+            const layout = { 
+                ...layoutTemplate, 
+                barmode: 'stack',
+                xaxis: { ...layoutTemplate.xaxis, tickangle: -40, tickfont: { size: 11 } },
+                margin: { t: 10, l: 40, r: 20, b: 100 },
+                legend: { font: { color: '#f8fafc' }, orientation: 'h', y: 1.1, x: 0 }
+            };
+
+            Plotly.newPlot('produtoChart', [traceV, traceNV], layout, config);
+        }
+
+        // Gráfico 3: Ajuste fino de paleta pro Pizza chart
+        function renderValidadosChart(data, validadoCol) {
+            const map = countBy(data, validadoCol);
+            const labels = Object.keys(map);
+            const values = Object.values(map);
+
+            const colors = labels.map(l => l.toLowerCase() === 'validado' ? '#10b981' : (l.toLowerCase() === 'não validado' ? '#ef4444' : '#f59e0b'));
+
+            const trace = {
+                labels: labels,
+                values: values,
+                type: 'pie',
+                hole: 0.5,
+                marker: {
+                    colors: colors,
+                    line: { color: '#1e293b', width: 2 }
+                },
+                textinfo: 'percent+label',
+                hoverinfo: 'label+value',
+                textposition: 'inside',
+                textfont: { size: 13, color: '#ffffff' }
+            };
+
+            const layout = { 
+                ...layoutTemplate, 
+                showlegend: false
+            };
+            delete layout.xaxis;
+            delete layout.yaxis;
+            layout.margin = { t: 10, l: 10, r: 10, b: 10 };
+
+            Plotly.newPlot('validadoChart', [trace], layout, config);
+        }
+
+        // Gráfico 4: Melhorado layout Horizonntal para Versões, que evita truncamento de texto
+        function renderVersaoHorizontalChart(versoesMap) {
+            // Remove 'Não Informado' do plot p focar nas versões reais e corta no Top 15
+            let mapped = Object.entries(versoesMap);
+            mapped = mapped.filter(item => item[0] !== 'Não Informado');
+            let sorted = mapped.sort((a,b) => b[1] - a[1]).slice(0, 15);
+            
+            // Reverse para exibição de bar-horizontal do Chart.js ficar com top no alto
+            sorted.reverse();
+            
+            const x = sorted.map(item => item[1]);
+            const y = sorted.map(item => item[0]);
+
+            const trace = {
+                x: x,
+                y: y,
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#8b5cf6', opacity: 0.9 },
+                text: x.map(String),
+                textposition: 'auto',
+                hoverinfo: 'none'
+            };
+
+            const layout = { 
+                ...layoutTemplate, 
+                margin: { t: 10, l: 230, r: 20, b: 40 }
+            };
+            Plotly.newPlot('versaoChart', [trace], layout, config);
+        }
+
+        // Gráfico 5: E-mails formatado
+        function renderEmailChart(map) {
+            // Oculta não informados dos top canais pra ser mais útil
+            let sorted = Object.entries(map).filter(m => m[0] !== 'Não Informado');
+            sorted = sorted.sort((a,b) => b[1] - a[1]).slice(0, 8);
+            sorted.reverse();
+            
+            const x = sorted.map(item => item[1]);
+            const y = sorted.map(item => item[0]);
+
+            const trace = {
+                x: x,
+                y: y,
+                type: 'bar',
+                orientation: 'h',
+                marker: { color: '#06b6d4' },
+                text: x.map(String),
+                textposition: 'auto',
+                hoverinfo: 'none'
+            };
+
+            const layout = { 
+                ...layoutTemplate,
+                yaxis: { ...layoutTemplate.yaxis, type: 'category' },
+                margin: { t: 10, l: 220, r: 20, b: 40 }
+            };
+            Plotly.newPlot('emailChart', [trace], layout, config);
+        }
+    </script>
+</body>
+</html>
