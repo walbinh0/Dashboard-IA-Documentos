@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -127,7 +128,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .kpi-container {
@@ -153,8 +156,10 @@
             overflow: hidden;
             transition: border-color 0.2s;
         }
-        
-        .kpi-card:hover { border-color: rgba(255,255,255,0.2); }
+
+        .kpi-card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
 
         .kpi-card::after {
             content: '';
@@ -163,7 +168,7 @@
             right: 0;
             width: 100px;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03));
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03));
             transform: skewX(-20deg);
         }
 
@@ -182,13 +187,24 @@
             font-weight: 600;
         }
 
-        .kpi-card.blue .kpi-value { color: var(--accent); }
-        .kpi-card.green .kpi-value { color: var(--success); }
-        .kpi-card.red .kpi-value { color: var(--danger); }
-        .kpi-card.orange .kpi-value { color: var(--warning); }
+        .kpi-card.blue .kpi-value {
+            color: var(--accent);
+        }
 
+        .kpi-card.green .kpi-value {
+            color: var(--success);
+        }
+
+        .kpi-card.red .kpi-value {
+            color: var(--danger);
+        }
+
+        .kpi-card.orange .kpi-value {
+            color: var(--warning);
+        }
     </style>
 </head>
+
 <body>
 
     <header>
@@ -222,7 +238,7 @@
     </div>
 
     <div class="dashboard-container" id="dashboard" style="display: none;">
-        
+
         <!-- Timeline Chart (Melhorado para Stacked) -->
         <div class="chart-card wide">
             <h2 class="chart-title">Abertura de Chamados e Validação ao longo do Tempo</h2>
@@ -262,15 +278,15 @@
             download: true,
             header: true,
             skipEmptyLines: true,
-            complete: function(results) {
+            complete: function (results) {
                 // remove potentially empty final rows
                 const data = results.data.filter(row => Object.keys(row).length > 2);
                 processData(data);
-                
+
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('kpis').style.opacity = '0';
                 document.getElementById('dashboard').style.opacity = '0';
-                
+
                 document.getElementById('kpis').style.display = 'grid';
                 document.getElementById('dashboard').style.display = 'grid';
 
@@ -282,7 +298,7 @@
                     document.getElementById('dashboard').style.opacity = '1';
                 }, 50);
             },
-            error: function(error) {
+            error: function (error) {
                 document.getElementById('loader').innerHTML = "<span style='color: var(--danger)'>Erro ao carregar dados: " + error.message + "</span>";
             }
         });
@@ -322,7 +338,7 @@
 
         function processData(data) {
             document.getElementById('total-chamados').innerText = data.length;
-            
+
             // Lógica rigorosa de total de validados e não validados (correção pedida)
             let validadosNum = 0;
             let naoValidadosNum = 0;
@@ -361,15 +377,15 @@
             const timelineMapInvalid = {};
             const allDates = new Set();
             const dateCol = findColumnName(data, 'data/hora') || findColumnName(data, 'data');
-            
+
             data.forEach(row => {
                 const rawDate = dateCol ? cleanString(row[dateCol]) : 'Não Informado';
                 const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'nv';
-                
-                if(rawDate !== 'Não Informado') {
+
+                if (rawDate !== 'Não Informado') {
                     const datePart = rawDate.split(' ')[0]; // Extrai dia/mes/ano
                     allDates.add(datePart);
-                    
+
                     if (status === 'validado') {
                         timelineMapValid[datePart] = (timelineMapValid[datePart] || 0) + 1;
                     } else {
@@ -380,11 +396,11 @@
 
             const parseDate = s => {
                 const parts = s.split('/');
-                return parts.length === 3 ? new Date(parts[2], parts[1]-1, parts[0]) : new Date(0);
+                return parts.length === 3 ? new Date(parts[2], parts[1] - 1, parts[0]) : new Date(0);
             };
 
-            const sortedDates = Array.from(allDates).sort((a,b) => parseDate(a) - parseDate(b));
-            
+            const sortedDates = Array.from(allDates).sort((a, b) => parseDate(a) - parseDate(b));
+
             const traceValid = {
                 x: sortedDates,
                 y: sortedDates.map(date => timelineMapValid[date] || 0),
@@ -392,7 +408,7 @@
                 type: 'bar',
                 marker: { color: '#10b981' }
             };
-            
+
             const traceInvalid = {
                 x: sortedDates,
                 y: sortedDates.map(date => timelineMapInvalid[date] || 0),
@@ -401,8 +417,8 @@
                 marker: { color: '#ef4444' }
             };
 
-            const layout = { 
-                ...layoutTemplate, 
+            const layout = {
+                ...layoutTemplate,
                 barmode: 'stack',
                 xaxis: { ...layoutTemplate.xaxis, type: 'category' },
                 margin: { t: 10, l: 40, r: 20, b: 60 },
@@ -417,13 +433,13 @@
             const mapValid = {};
             const mapInvalid = {};
             const produtos = new Set();
-            
+
             data.forEach(row => {
                 let prod = produtoCol ? cleanString(row[produtoCol]) : 'Não Informado';
                 if (prod.length > 25) prod = prod.substring(0, 25) + "..."; // limite p/ n quebrar tela
 
                 const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'nv';
-                
+
                 produtos.add(prod);
                 if (status === 'validado') {
                     mapValid[prod] = (mapValid[prod] || 0) + 1;
@@ -433,12 +449,12 @@
             });
 
             // Ordena produtos por volume total
-            const sortedProdutos = Array.from(produtos).sort((a,b) => {
-                const sumA = (mapValid[a]||0) + (mapInvalid[a]||0);
-                const sumB = (mapValid[b]||0) + (mapInvalid[b]||0);
+            const sortedProdutos = Array.from(produtos).sort((a, b) => {
+                const sumA = (mapValid[a] || 0) + (mapInvalid[a] || 0);
+                const sumB = (mapValid[b] || 0) + (mapInvalid[b] || 0);
                 return sumB - sumA;
             });
-            
+
             const traceV = {
                 x: sortedProdutos,
                 y: sortedProdutos.map(p => mapValid[p] || 0),
@@ -446,7 +462,7 @@
                 type: 'bar',
                 marker: { color: '#10b981' }
             };
-            
+
             const traceNV = {
                 x: sortedProdutos,
                 y: sortedProdutos.map(p => mapInvalid[p] || 0),
@@ -455,8 +471,8 @@
                 marker: { color: '#ef4444' }
             };
 
-            const layout = { 
-                ...layoutTemplate, 
+            const layout = {
+                ...layoutTemplate,
                 barmode: 'stack',
                 xaxis: { ...layoutTemplate.xaxis, tickangle: -40, tickfont: { size: 11 } },
                 margin: { t: 10, l: 40, r: 20, b: 100 },
@@ -489,8 +505,8 @@
                 textfont: { size: 13, color: '#ffffff' }
             };
 
-            const layout = { 
-                ...layoutTemplate, 
+            const layout = {
+                ...layoutTemplate,
                 showlegend: false
             };
             delete layout.xaxis;
@@ -505,11 +521,11 @@
             // Remove 'Não Informado' do plot p focar nas versões reais e corta no Top 15
             let mapped = Object.entries(versoesMap);
             mapped = mapped.filter(item => item[0] !== 'Não Informado');
-            let sorted = mapped.sort((a,b) => b[1] - a[1]).slice(0, 15);
-            
+            let sorted = mapped.sort((a, b) => b[1] - a[1]).slice(0, 15);
+
             // Reverse para exibição de bar-horizontal do Chart.js ficar com top no alto
             sorted.reverse();
-            
+
             const x = sorted.map(item => item[1]);
             const y = sorted.map(item => item[0]);
 
@@ -524,8 +540,8 @@
                 hoverinfo: 'none'
             };
 
-            const layout = { 
-                ...layoutTemplate, 
+            const layout = {
+                ...layoutTemplate,
                 margin: { t: 10, l: 230, r: 20, b: 40 }
             };
             Plotly.newPlot('versaoChart', [trace], layout, config);
@@ -535,9 +551,9 @@
         function renderEmailChart(map) {
             // Oculta não informados dos top canais pra ser mais útil
             let sorted = Object.entries(map).filter(m => m[0] !== 'Não Informado');
-            sorted = sorted.sort((a,b) => b[1] - a[1]).slice(0, 8);
+            sorted = sorted.sort((a, b) => b[1] - a[1]).slice(0, 8);
             sorted.reverse();
-            
+
             const x = sorted.map(item => item[1]);
             const y = sorted.map(item => item[0]);
 
@@ -552,7 +568,7 @@
                 hoverinfo: 'none'
             };
 
-            const layout = { 
+            const layout = {
                 ...layoutTemplate,
                 yaxis: { ...layoutTemplate.yaxis, type: 'category' },
                 margin: { t: 10, l: 220, r: 20, b: 40 }
@@ -561,4 +577,5 @@
         }
     </script>
 </body>
+
 </html>
