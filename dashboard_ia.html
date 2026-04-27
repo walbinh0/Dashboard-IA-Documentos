@@ -10,21 +10,25 @@
     <!-- PapaParse for CSV parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
+            --bg-color: #020617;
+            /* Slate 950 */
+            --card-bg: rgba(15, 23, 42, 0.65);
+            /* Slate 900 with opacity */
+            --card-border: rgba(255, 255, 255, 0.08);
             --text-primary: #f8fafc;
+            /* Slate 50 */
             --text-secondary: #94a3b8;
-            --accent: #3b82f6;
-            --accent-hover: #60a5fa;
-            --border: #334155;
+            /* Slate 400 */
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-purple: #8b5cf6;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
-            --purple: #8b5cf6;
-            --cyan: #06b6d4;
         }
 
         * {
@@ -35,172 +39,306 @@
         }
 
         body {
-            background-color: var(--bg-color);
+            background: radial-gradient(circle at top right, #0f172a, #020617 100%);
             color: var(--text-primary);
-            padding: 2rem;
+            padding: 2.5rem;
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ambient glowing effect for premium look */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.15), transparent 60%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -20%;
+            right: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.12), transparent 60%);
+            z-index: -1;
+            pointer-events: none;
         }
 
         header {
-            margin-bottom: 2.5rem;
+            margin-bottom: 3.5rem;
             text-align: center;
+            animation: fadeInDown 0.8s ease-out;
         }
 
         h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(90deg, #60a5fa, #06b6d4, #a78bfa);
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #60a5fa, #c084fc, #ec4899);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            drop-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         p.subtitle {
             color: var(--text-secondary);
-            font-size: 1.1rem;
+            font-size: 1.15rem;
+            font-weight: 400;
         }
 
+        /* Grid Layout Fixes */
         .dashboard-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
             max-width: 1400px;
             margin: 0 auto;
+            opacity: 0;
+            /* Starts hidden for animation */
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-container {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-card.wide {
+                grid-column: auto;
+            }
         }
 
         .chart-card {
-            background-color: var(--card-bg);
-            border-radius: 16px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
             padding: 1.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border);
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-            position: relative;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s;
+            display: flex;
+            flex-direction: column;
         }
 
         .chart-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            border-color: #475569;
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
         }
 
         .chart-card.wide {
             grid-column: 1 / -1;
+            /* Spans across all columns */
         }
 
         .chart-title {
-            font-size: 1.25rem;
+            font-size: 1.15rem;
             font-weight: 600;
             margin-bottom: 1rem;
             color: var(--text-primary);
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.75rem;
+            letter-spacing: 0.01em;
         }
 
         .chart-title::before {
             content: '';
             display: inline-block;
-            width: 4px;
-            height: 1.2rem;
-            background-color: var(--accent);
-            border-radius: 2px;
-        }
-
-        #loader {
-            text-align: center;
-            padding: 4rem;
-            font-size: 1.2rem;
-            color: var(--accent);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--border);
-            border-top-color: var(--accent);
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            box-shadow: 0 0 12px var(--accent-cyan);
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .chart-wrapper {
+            flex-grow: 1;
+            min-height: 350px;
+            position: relative;
+            width: 100%;
         }
 
+        /* KPIs */
         .kpi-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             max-width: 1400px;
             margin-left: auto;
             margin-right: auto;
+            opacity: 0;
         }
 
         .kpi-card {
-            background-color: var(--card-bg);
-            border-radius: 16px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
             padding: 1.5rem;
-            border: 1px solid var(--border);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            border: 1px solid var(--card-border);
             position: relative;
             overflow: hidden;
-            transition: border-color 0.2s;
+            transition: all 0.3s ease;
         }
 
         .kpi-card:hover {
+            transform: translateY(-4px);
             border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
         }
 
-        .kpi-card::after {
+        .kpi-card::before {
             content: '';
             position: absolute;
             top: 0;
-            right: 0;
-            width: 100px;
+            left: 0;
+            width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03));
-            transform: skewX(-20deg);
+            background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.04), transparent 70%);
+            pointer-events: none;
+        }
+
+        .kpi-icon {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            opacity: 0.25;
+            color: var(--text-primary);
         }
 
         .kpi-value {
             font-size: 2.5rem;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-primary);
             margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
         }
 
         .kpi-label {
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
             font-weight: 600;
         }
 
-        .kpi-card.blue .kpi-value {
-            color: var(--accent);
+        /* Colorful KPI Values */
+        .kpi-card.total .kpi-value {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .kpi-card.green .kpi-value {
-            color: var(--success);
+        .kpi-card.success .kpi-value {
+            background: linear-gradient(135deg, #34d399, #10b981);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .kpi-card.red .kpi-value {
-            color: var(--danger);
+        .kpi-card.danger .kpi-value {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .kpi-card.orange .kpi-value {
-            color: var(--warning);
+        .kpi-card.rate .kpi-value {
+            background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .kpi-card.versions .kpi-value {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            z-index: 50;
+            transition: opacity 0.4s ease;
+        }
+
+        .loader-ring {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.05);
+            border-top-color: var(--accent-blue);
+            border-right-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+        }
+
+        .loader-text {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
@@ -208,65 +346,113 @@
 <body>
 
     <header>
-        <h1>Painel de documentação da IA</h1>
+        <h1>Painel de Documentação da IA</h1>
         <p class="subtitle">Visão Estratégica Interativa dos Chamados</p>
     </header>
 
     <div id="loader">
-        <div class="spinner"></div>
-        <span>Carregando e processando inteligência de dados...</span>
+        <div class="loader-ring"></div>
+        <span class="loader-text">Analisando Inteligência de Dados...</span>
     </div>
 
-    <!-- KPIs Corrigidos com 'Não Validados' -->
+    <!-- Novo Layout de KPIs -->
     <div class="kpi-container" id="kpis" style="display: none;">
-        <div class="kpi-card blue">
+        <div class="kpi-card total">
+            <div class="kpi-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+            </div>
             <div class="kpi-value" id="total-chamados">0</div>
             <div class="kpi-label">Total de Chamados</div>
         </div>
-        <div class="kpi-card green">
+
+        <div class="kpi-card success">
+            <div class="kpi-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
             <div class="kpi-value" id="total-validados">0</div>
             <div class="kpi-label">Documentos Validados</div>
         </div>
-        <div class="kpi-card red" title="Documentos pendentes, não validados ou sem validação sinalizada.">
+
+        <div class="kpi-card danger">
+            <div class="kpi-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
             <div class="kpi-value" id="total-nao-validados">0</div>
-            <div class="kpi-label">Documentos Não Validados</div>
+            <div class="kpi-label">Não Validados</div>
         </div>
-        <div class="kpi-card orange">
+
+        <!-- NOVO KPI: Taxa de Validação -->
+        <div class="kpi-card rate">
+            <div class="kpi-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+            </div>
+            <div class="kpi-value" id="taxa-validacao">0%</div>
+            <div class="kpi-label">Taxa de Validação</div>
+        </div>
+
+        <div class="kpi-card versions">
+            <div class="kpi-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+                    <polyline points="21 3 21 8 16 8"></polyline>
+                </svg>
+            </div>
             <div class="kpi-value" id="total-versoes">0</div>
             <div class="kpi-label">Versões Distintas</div>
         </div>
     </div>
 
+    <!-- Novo Layout do Dashboard (2 colunas perfeitas) -->
     <div class="dashboard-container" id="dashboard" style="display: none;">
 
-        <!-- Timeline Chart (Melhorado para Stacked) -->
+        <!-- Span 2: Timeline Chart (Line/Area para melhor visualização) -->
         <div class="chart-card wide">
-            <h2 class="chart-title">Abertura de Chamados e Validação ao longo do Tempo</h2>
-            <div id="timelineChart" style="height: 350px;"></div>
+            <h2 class="chart-title">Evolução Temporal dos Chamados</h2>
+            <div class="chart-wrapper" id="timelineChart"></div>
         </div>
 
-        <!-- Produtos Bar Chart (Melhorado com indicador de validação) -->
+        <!-- Span 1: Produtos (Horizontal Stacked Bar p/ arrumar layout torto) -->
         <div class="chart-card">
-            <h2 class="chart-title">Produtos Envolvidos e Status</h2>
-            <div id="produtoChart" style="height: 350px;"></div>
+            <h2 class="chart-title">Top 10 Produtos Envolvidos</h2>
+            <div class="chart-wrapper" id="produtoChart"></div>
         </div>
 
-        <!-- Status de Validação Pie Chart -->
+        <!-- Span 1: Status Donut Chart -->
         <div class="chart-card">
             <h2 class="chart-title">Status Global dos Documentos</h2>
-            <div id="validadoChart" style="height: 350px;"></div>
+            <div class="chart-wrapper" id="validadoChart"></div>
         </div>
 
-        <!-- Versão Bar Chart Horizontal (Top 15 mais legível) -->
-        <div class="chart-card wide">
-            <h2 class="chart-title">Top 15 Versões Reportadas</h2>
-            <div id="versaoChart" style="height: 400px;"></div>
+        <!-- Span 1: Versões (Horizontal) -->
+        <div class="chart-card">
+            <h2 class="chart-title">Top 10 Versões Reportadas</h2>
+            <div class="chart-wrapper" id="versaoChart"></div>
         </div>
 
-        <!-- Origem por E-mail Horizontal Bar Chart -->
-        <div class="chart-card wide">
-            <h2 class="chart-title">Top Canais Solicitantes (E-mail)</h2>
-            <div id="emailChart" style="height: 400px;"></div>
+        <!-- Span 1: Origem por E-mail (Horizontal) -->
+        <div class="chart-card">
+            <h2 class="chart-title">Top 10 Canais Solicitantes</h2>
+            <div class="chart-wrapper" id="emailChart"></div>
         </div>
 
     </div>
@@ -279,27 +465,30 @@
             header: true,
             skipEmptyLines: true,
             complete: function (results) {
-                // remove potentially empty final rows
                 const data = results.data.filter(row => Object.keys(row).length > 2);
                 processData(data);
 
-                document.getElementById('loader').style.display = 'none';
-                document.getElementById('kpis').style.opacity = '0';
-                document.getElementById('dashboard').style.opacity = '0';
-
-                document.getElementById('kpis').style.display = 'grid';
-                document.getElementById('dashboard').style.display = 'grid';
-
-                // Fade-in animation effect
+                // Hide loader smoothly
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
                 setTimeout(() => {
-                    document.getElementById('kpis').style.transition = 'opacity 0.6s ease';
-                    document.getElementById('dashboard').style.transition = 'opacity 0.6s ease';
-                    document.getElementById('kpis').style.opacity = '1';
-                    document.getElementById('dashboard').style.opacity = '1';
-                }, 50);
+                    loader.style.display = 'none';
+
+                    // Show content and trigger animation
+                    const kpis = document.getElementById('kpis');
+                    const dashboard = document.getElementById('dashboard');
+                    kpis.style.display = 'grid';
+                    dashboard.style.display = 'grid';
+
+                    // Small delay to ensure CSS applies before animating
+                    setTimeout(() => {
+                        kpis.classList.add('fade-in');
+                        dashboard.classList.add('fade-in');
+                    }, 50);
+                }, 400);
             },
             error: function (error) {
-                document.getElementById('loader').innerHTML = "<span style='color: var(--danger)'>Erro ao carregar dados: " + error.message + "</span>";
+                document.getElementById('loader').innerHTML = `<span style='color: var(--danger)'>Erro ao carregar dados: ${error.message}</span>`;
             }
         });
 
@@ -308,7 +497,6 @@
             return (str || "").trim() || "Não Informado";
         }
 
-        // Helper to find column name dynamically to avoid typo/colon issues
         function findColumnName(data, keyword) {
             if (!data || data.length === 0) return null;
             const keys = Object.keys(data[0]);
@@ -325,54 +513,68 @@
             return counts;
         }
 
+        // Global Chart Styling Template
         const layoutTemplate = {
             plot_bgcolor: 'transparent',
             paper_bgcolor: 'transparent',
-            font: { color: '#94a3b8', family: 'Inter' },
+            font: { color: '#94a3b8', family: 'Inter', size: 12 },
             margin: { t: 20, l: 40, r: 20, b: 40 },
-            xaxis: { gridcolor: '#334155', zerolinecolor: '#334155', tickfont: { color: '#94a3b8' } },
-            yaxis: { gridcolor: '#334155', zerolinecolor: '#334155', tickfont: { color: '#94a3b8' } }
+            xaxis: {
+                gridcolor: 'rgba(255,255,255,0.05)',
+                zerolinecolor: 'rgba(255,255,255,0.05)',
+                tickfont: { color: '#94a3b8' }
+            },
+            yaxis: {
+                gridcolor: 'rgba(255,255,255,0.05)',
+                zerolinecolor: 'rgba(255,255,255,0.05)',
+                tickfont: { color: '#94a3b8' }
+            },
+            hoverlabel: {
+                bgcolor: '#1e293b',
+                font: { family: 'Inter', color: '#f8fafc' },
+                bordercolor: 'rgba(255,255,255,0.1)'
+            }
         };
 
         const config = { responsive: true, displayModeBar: false };
 
         function processData(data) {
-            document.getElementById('total-chamados').innerText = data.length;
+            const totalChamados = data.length;
+            document.getElementById('total-chamados').innerText = totalChamados;
 
-            // Lógica rigorosa de total de validados e não validados (correção pedida)
             let validadosNum = 0;
             let naoValidadosNum = 0;
             const validadoCol = findColumnName(data, 'validado');
 
             data.forEach(row => {
                 const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'não informado';
-                if (status === 'validado') {
-                    validadosNum++;
-                } else {
-                    naoValidadosNum++;
-                }
+                if (status === 'validado') validadosNum++;
+                else naoValidadosNum++;
             });
 
             document.getElementById('total-validados').innerText = validadosNum;
             document.getElementById('total-nao-validados').innerText = naoValidadosNum;
 
+            // Novo Indicador
+            const taxa = totalChamados > 0 ? ((validadosNum / totalChamados) * 100).toFixed(1) : 0;
+            document.getElementById('taxa-validacao').innerText = taxa + '%';
+
             const versaoCol = findColumnName(data, 'versão') || findColumnName(data, 'versao');
             const versoesMap = countBy(data, versaoCol);
-            // Remove null/empty mapping from unique version counts
             const qtyVersoes = Object.keys(versoesMap).filter(v => v !== 'Não Informado').length;
             document.getElementById('total-versoes').innerText = qtyVersoes;
 
             const emailCol = findColumnName(data, 'e-mail') || findColumnName(data, 'email');
 
-            renderTimelineStacked(data, validadoCol);
-            renderProdutoStackChart(data, findColumnName(data, 'produto'), validadoCol);
+            renderTimeline(data, validadoCol);
+            renderProdutoChart(data, findColumnName(data, 'produto'), validadoCol);
             renderValidadosChart(data, validadoCol);
+            renderVersaoChart(versoesMap);
             renderEmailChart(countBy(data, emailCol));
-            renderVersaoHorizontalChart(versoesMap);
         }
 
-        // Gráfico 1: Melhorado com áreas empilhadas distinguindo Validados de Não Validados
-        function renderTimelineStacked(data, validadoCol) {
+        // Gráfico 1: Timeline com Linhas Suaves e Preenchimento em Área (Premium)
+        function renderTimeline(data, validadoCol) {
             const timelineMapValid = {};
             const timelineMapInvalid = {};
             const allDates = new Set();
@@ -383,7 +585,7 @@
                 const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'nv';
 
                 if (rawDate !== 'Não Informado') {
-                    const datePart = rawDate.split(' ')[0]; // Extrai dia/mes/ano
+                    const datePart = rawDate.split(' ')[0];
                     allDates.add(datePart);
 
                     if (status === 'validado') {
@@ -405,84 +607,92 @@
                 x: sortedDates,
                 y: sortedDates.map(date => timelineMapValid[date] || 0),
                 name: 'Validados',
-                type: 'bar',
-                marker: { color: '#10b981' }
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#10b981', width: 3, shape: 'spline', smoothing: 0.8 },
+                fill: 'tozeroy',
+                fillcolor: 'rgba(16, 185, 129, 0.2)',
+                stackgroup: 'one'
             };
 
             const traceInvalid = {
                 x: sortedDates,
                 y: sortedDates.map(date => timelineMapInvalid[date] || 0),
                 name: 'Não Validados',
-                type: 'bar',
-                marker: { color: '#ef4444' }
+                type: 'scatter',
+                mode: 'lines',
+                line: { color: '#ef4444', width: 3, shape: 'spline', smoothing: 0.8 },
+                fill: 'tonexty',
+                fillcolor: 'rgba(239, 68, 68, 0.2)',
+                stackgroup: 'one'
             };
 
             const layout = {
                 ...layoutTemplate,
-                barmode: 'stack',
-                xaxis: { ...layoutTemplate.xaxis, type: 'category' },
-                margin: { t: 10, l: 40, r: 20, b: 60 },
-                legend: { font: { color: '#f8fafc' }, orientation: 'h', y: 1.1, x: 0 }
+                xaxis: { ...layoutTemplate.xaxis, type: 'category', tickangle: -45 },
+                margin: { t: 20, l: 40, r: 20, b: 60 },
+                legend: { font: { color: '#f8fafc' }, orientation: 'h', y: 1.15, x: 0 },
+                hovermode: 'x unified'
             };
 
             Plotly.newPlot('timelineChart', [traceValid, traceInvalid], layout, config);
         }
 
-        // Gráfico 2: Produtos exibidos empilhando Validados vs N/Validados
-        function renderProdutoStackChart(data, produtoCol, validadoCol) {
+        // Gráfico 2: Produtos - Alterado para Barras Horizontais (Corrige o layout torto)
+        function renderProdutoChart(data, produtoCol, validadoCol) {
             const mapValid = {};
             const mapInvalid = {};
             const produtos = new Set();
 
             data.forEach(row => {
                 let prod = produtoCol ? cleanString(row[produtoCol]) : 'Não Informado';
-                if (prod.length > 25) prod = prod.substring(0, 25) + "..."; // limite p/ n quebrar tela
+                if (prod.length > 25) prod = prod.substring(0, 25) + "...";
 
                 const status = validadoCol ? cleanString(row[validadoCol]).toLowerCase() : 'nv';
 
                 produtos.add(prod);
-                if (status === 'validado') {
-                    mapValid[prod] = (mapValid[prod] || 0) + 1;
-                } else {
-                    mapInvalid[prod] = (mapInvalid[prod] || 0) + 1;
-                }
+                if (status === 'validado') mapValid[prod] = (mapValid[prod] || 0) + 1;
+                else mapInvalid[prod] = (mapInvalid[prod] || 0) + 1;
             });
 
-            // Ordena produtos por volume total
             const sortedProdutos = Array.from(produtos).sort((a, b) => {
                 const sumA = (mapValid[a] || 0) + (mapInvalid[a] || 0);
                 const sumB = (mapValid[b] || 0) + (mapInvalid[b] || 0);
                 return sumB - sumA;
-            });
+            }).slice(0, 10); // Top 10 para não estourar layout
+
+            sortedProdutos.reverse(); // Maior no topo
 
             const traceV = {
-                x: sortedProdutos,
-                y: sortedProdutos.map(p => mapValid[p] || 0),
+                y: sortedProdutos,
+                x: sortedProdutos.map(p => mapValid[p] || 0),
                 name: 'Validados',
                 type: 'bar',
-                marker: { color: '#10b981' }
+                orientation: 'h',
+                marker: { color: '#10b981', opacity: 0.9 }
             };
 
             const traceNV = {
-                x: sortedProdutos,
-                y: sortedProdutos.map(p => mapInvalid[p] || 0),
+                y: sortedProdutos,
+                x: sortedProdutos.map(p => mapInvalid[p] || 0),
                 name: 'Não Validados',
                 type: 'bar',
-                marker: { color: '#ef4444' }
+                orientation: 'h',
+                marker: { color: '#ef4444', opacity: 0.9 }
             };
 
             const layout = {
                 ...layoutTemplate,
                 barmode: 'stack',
-                xaxis: { ...layoutTemplate.xaxis, tickangle: -40, tickfont: { size: 11 } },
-                margin: { t: 10, l: 40, r: 20, b: 100 },
-                legend: { font: { color: '#f8fafc' }, orientation: 'h', y: 1.1, x: 0 }
+                yaxis: { ...layoutTemplate.yaxis, type: 'category', categoryorder: 'trace' },
+                margin: { t: 20, l: 180, r: 20, b: 40 },
+                legend: { font: { color: '#f8fafc' }, orientation: 'h', y: 1.15, x: 0 }
             };
 
             Plotly.newPlot('produtoChart', [traceV, traceNV], layout, config);
         }
 
-        // Gráfico 3: Ajuste fino de paleta pro Pizza chart
+        // Gráfico 3: Status de Validação (Donut chart fino e elegante)
         function renderValidadosChart(data, validadoCol) {
             const map = countBy(data, validadoCol);
             const labels = Object.keys(map);
@@ -494,84 +704,75 @@
                 labels: labels,
                 values: values,
                 type: 'pie',
-                hole: 0.5,
+                hole: 0.65,
                 marker: {
                     colors: colors,
-                    line: { color: '#1e293b', width: 2 }
+                    line: { color: '#0f172a', width: 3 }
                 },
-                textinfo: 'percent+label',
-                hoverinfo: 'label+value',
+                textinfo: 'percent',
+                hoverinfo: 'label+value+percent',
                 textposition: 'inside',
-                textfont: { size: 13, color: '#ffffff' }
+                textfont: { size: 14, color: '#ffffff', weight: 'bold' }
             };
 
             const layout = {
                 ...layoutTemplate,
-                showlegend: false
+                showlegend: true,
+                legend: { orientation: 'h', font: { color: '#f8fafc' }, x: 0.5, y: -0.1, xanchor: 'center' },
+                margin: { t: 20, l: 20, r: 20, b: 20 }
             };
             delete layout.xaxis;
             delete layout.yaxis;
-            layout.margin = { t: 10, l: 10, r: 10, b: 10 };
 
             Plotly.newPlot('validadoChart', [trace], layout, config);
         }
 
-        // Gráfico 4: Melhorado layout Horizonntal para Versões, que evita truncamento de texto
-        function renderVersaoHorizontalChart(versoesMap) {
-            // Remove 'Não Informado' do plot p focar nas versões reais e corta no Top 15
-            let mapped = Object.entries(versoesMap);
-            mapped = mapped.filter(item => item[0] !== 'Não Informado');
-            let sorted = mapped.sort((a, b) => b[1] - a[1]).slice(0, 15);
-
-            // Reverse para exibição de bar-horizontal do Chart.js ficar com top no alto
+        // Gráfico 4: Versões (Barra Horizontal)
+        function renderVersaoChart(versoesMap) {
+            let mapped = Object.entries(versoesMap).filter(item => item[0] !== 'Não Informado');
+            let sorted = mapped.sort((a, b) => b[1] - a[1]).slice(0, 10);
             sorted.reverse();
 
-            const x = sorted.map(item => item[1]);
-            const y = sorted.map(item => item[0]);
-
             const trace = {
-                x: x,
-                y: y,
+                x: sorted.map(item => item[1]),
+                y: sorted.map(item => item[0]),
                 type: 'bar',
                 orientation: 'h',
                 marker: { color: '#8b5cf6', opacity: 0.9 },
-                text: x.map(String),
+                text: sorted.map(item => item[1]),
                 textposition: 'auto',
-                hoverinfo: 'none'
+                hoverinfo: 'y+x'
             };
 
             const layout = {
                 ...layoutTemplate,
-                margin: { t: 10, l: 230, r: 20, b: 40 }
+                yaxis: { ...layoutTemplate.yaxis, type: 'category', categoryorder: 'trace' },
+                margin: { t: 20, l: 150, r: 20, b: 40 }
             };
             Plotly.newPlot('versaoChart', [trace], layout, config);
         }
 
-        // Gráfico 5: E-mails formatado
+        // Gráfico 5: Origem por E-mail (Barra Horizontal)
         function renderEmailChart(map) {
-            // Oculta não informados dos top canais pra ser mais útil
             let sorted = Object.entries(map).filter(m => m[0] !== 'Não Informado');
-            sorted = sorted.sort((a, b) => b[1] - a[1]).slice(0, 8);
+            sorted = sorted.sort((a, b) => b[1] - a[1]).slice(0, 10);
             sorted.reverse();
 
-            const x = sorted.map(item => item[1]);
-            const y = sorted.map(item => item[0]);
-
             const trace = {
-                x: x,
-                y: y,
+                x: sorted.map(item => item[1]),
+                y: sorted.map(item => item[0]),
                 type: 'bar',
                 orientation: 'h',
-                marker: { color: '#06b6d4' },
-                text: x.map(String),
+                marker: { color: '#06b6d4', opacity: 0.9 },
+                text: sorted.map(item => item[1]),
                 textposition: 'auto',
-                hoverinfo: 'none'
+                hoverinfo: 'y+x'
             };
 
             const layout = {
                 ...layoutTemplate,
-                yaxis: { ...layoutTemplate.yaxis, type: 'category' },
-                margin: { t: 10, l: 220, r: 20, b: 40 }
+                yaxis: { ...layoutTemplate.yaxis, type: 'category', categoryorder: 'trace' },
+                margin: { t: 20, l: 220, r: 20, b: 40 }
             };
             Plotly.newPlot('emailChart', [trace], layout, config);
         }
